@@ -19,6 +19,7 @@ const LoginPage = () => {
               headerTitle: "Register to Ngobrol Pintar",
             },
           }}
+          signInUrl="/auth/register"
           routing="hash"
         />
       </div>

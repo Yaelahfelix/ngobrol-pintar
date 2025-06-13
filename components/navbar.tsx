@@ -214,7 +214,7 @@ export const Navbar = () => {
                   className="w-full"
                   variant="light"
                 >
-                  Login
+                  Register
                 </Button>
               </>
             ) : (
