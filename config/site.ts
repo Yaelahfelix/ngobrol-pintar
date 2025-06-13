@@ -12,10 +12,6 @@ export const siteConfig = {
       label: "Acara",
       href: "/acara",
     },
-    {
-      label: "About",
-      href: "/about",
-    },
   ],
   navMenuItems: [
     {
@@ -25,10 +21,6 @@ export const siteConfig = {
     {
       label: "Acara",
       href: "/acara",
-    },
-    {
-      label: "About",
-      href: "/about",
     },
   ],
 };
