@@ -172,10 +172,6 @@ const ModalDaftar = ({
         return;
       }
 
-      const SERVER_KEY = "SB-Mid-server-PvAbD2oijBL7WPIm3Vv6MrWq";
-      const AUTH_STRING = btoa(SERVER_KEY);
-      const endpoint = "https://app.sandbox.midtrans.com/snap/v1/transactions";
-
       const payload = {
         transaction_details: {
           order_id: invoice,
@@ -185,118 +181,117 @@ const ModalDaftar = ({
           first_name: formData.nama,
           phone: formData.noWhatsapp,
         },
-        item_details: [
-          {
-            id: idSeminar,
-            price: price,
-            quantity: 1,
-            name: seminarTitle,
-          },
-        ],
+        // item_details: [
+        //   {
+        //     id: idSeminar,
+        //     price: price,
+        //     quantity: 1,
+        //     name: seminarTitle,
+        //   },
+        // ],
       };
 
-      const docRef = await addDoc(collection(db, "pembayaran"), {
-        nama: formData.nama,
-        kotaAsal: formData.kota,
-        noWhatsapp: formData.noWhatsapp,
-        harga: price,
-        noInvoice: invoice,
-        statusPembayaran: "pending",
-        idSeminar,
-        userId,
-        createdAt: new Date(),
-      });
-
-      // Create Midtrans transaction
-      const res = await fetch(endpoint, {
+      const res = await fetch("/api/daftar", {
         method: "POST",
         headers: {
-          Accept: "application/json",
           "Content-Type": "application/json",
-          Authorization: `Basic ${AUTH_STRING}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          payload,
+          formData,
+          userId,
+          price,
+          invoice,
+          idSeminar,
+          user,
+        }),
       });
-
-      if (!res.ok) throw new Error("Gagal membuat transaksi pembayaran");
-
       const response = await res.json();
+      if (res.ok) {
+        const docRef = await addDoc(collection(db, "pembayaran"), {
+          nama: formData.nama,
+          kotaAsal: formData.kota,
+          noWhatsapp: formData.noWhatsapp,
+          harga: price,
+          noInvoice: invoice,
+          statusPembayaran: "pending",
+          idSeminar,
+          userId,
+          createdAt: new Date(),
+        });
+        (window as any).snap.pay(response.token, {
+          onSuccess: async function (result: any) {
+            console.log("Pembayaran berhasil", result);
 
-      (window as any).snap.pay(response.token, {
-        onSuccess: async function (result: any) {
-          console.log("Pembayaran berhasil", result);
-
-          const paymentRef = doc(db, "pembayaran", docRef.id);
-          await updateDoc(paymentRef, {
-            statusPembayaran: "success",
-            paymentDetails: result,
-          });
-
-          const data = await addDoc(collection(db, "tiket"), {
-            userId,
-            noInvoice: invoice,
-            idSeminar,
-            isExpired: false,
-            createdAt: new Date(),
-            nama: formData.nama,
-            kotaAsal: formData.kota,
-            noWhatsapp: formData.noWhatsapp,
-          });
-
-          const userEmail = user.user?.emailAddresses[0]?.emailAddress;
-          if (userEmail) {
-            await fetch("/api/send-ticket-email", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                nama: formData.nama,
-                kotaAsal: formData.kota,
-                noWhatsapp: formData.noWhatsapp,
-                noInvoice: invoice,
-                idSeminar,
-                email: userEmail,
-              }),
+            const paymentRef = doc(db, "pembayaran", docRef.id);
+            await updateDoc(paymentRef, {
+              statusPembayaran: "success",
+              paymentDetails: result,
             });
-          }
 
-          addToast({
-            title: "Pembayaran Berhasil! 🎉",
-            description: "Tiket telah dikirim ke email Anda",
-            color: "success",
-          });
-          Router.push("/tiket/" + data.id);
-          onClose();
-        },
-        onPending: async function (result: any) {
-          const paymentRef = doc(db, "pembayaran", docRef.id);
-          await updateDoc(paymentRef, {
-            statusPembayaran: "pending",
-            paymentDetails: result,
-          });
+            const data = await addDoc(collection(db, "tiket"), {
+              userId,
+              noInvoice: invoice,
+              idSeminar,
+              isExpired: false,
+              createdAt: new Date(),
+              nama: formData.nama,
+              kotaAsal: formData.kota,
+              noWhatsapp: formData.noWhatsapp,
+            });
 
-          addToast({
-            title: "Pembayaran Tertunda",
-            description: "Silakan selesaikan pembayaran Anda",
-            color: "warning",
-          });
-        },
-        onError: async function (result: any) {
-          const paymentRef = doc(db, "pembayaran", docRef.id);
-          await updateDoc(paymentRef, {
-            statusPembayaran: "error",
-            paymentDetails: result,
-          });
-
-          addToast({
-            title: "Pembayaran Gagal",
-            description: "Terjadi kesalahan saat memproses pembayaran",
-            color: "danger",
-          });
-        },
-        onClose: function () {
-          console.log("Customer menutup popup pembayaran");
-        },
-      });
+            const userEmail = user.user?.emailAddresses[0]?.emailAddress;
+            if (userEmail) {
+              await fetch("/api/send-ticket-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  nama: formData.nama,
+                  kotaAsal: formData.kota,
+                  noWhatsapp: formData.noWhatsapp,
+                  noInvoice: invoice,
+                  idSeminar,
+                  email: userEmail,
+                }),
+              });
+            }
+            addToast({
+              title: "Pembayaran Berhasil! 🎉",
+              description: "Tiket telah dikirim ke email Anda",
+              color: "success",
+            });
+            Router.push("/tiket/" + data.id);
+            onClose();
+          },
+          onPending: async function (result: any) {
+            const paymentRef = doc(db, "pembayaran", docRef.id);
+            await updateDoc(paymentRef, {
+              statusPembayaran: "error",
+              paymentDetails: result,
+            });
+            addToast({
+              title: "Terjadi Kesalahan",
+              description: "Gagal memproses pendaftaran. Silakan coba lagi.",
+              color: "danger",
+            });
+          },
+          onError: async function (result: any) {
+            const paymentRef = doc(db, "pembayaran", docRef.id);
+            await updateDoc(paymentRef, {
+              statusPembayaran: "error",
+              paymentDetails: result,
+            });
+            addToast({
+              title: "Terjadi Kesalahan",
+              description: "Gagal memproses pendaftaran. Silakan coba lagi.",
+              color: "danger",
+            });
+          },
+          onClose: function () {
+            console.log("Customer menutup popup pembayaran");
+          },
+        });
+      }
     } catch (err) {
       console.error("Error saat memproses pendaftaran:", err);
       addToast({
