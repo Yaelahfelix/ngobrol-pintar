@@ -29,13 +29,26 @@ import {
 } from "@/components/icons";
 import { cn } from "tailwind-variants";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { SignOutButton, useAuth, useClerk } from "@clerk/clerk-react";
+import { CircleUserIcon } from "lucide-react";
+import {
+  Divider,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+} from "@heroui/react";
 
 export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const path = usePathname();
   const isHome = path === "/";
+  const { isSignedIn } = useAuth();
+  const { signOut } = useClerk();
+  const Router = useRouter();
 
+  console.log("navigasi is login: ", isSignedIn);
   console.log(isHome);
 
   useEffect(() => {
@@ -58,7 +71,7 @@ export const Navbar = () => {
       }}
       labelPlacement="outside"
       placeholder="Search..."
-      color="info"
+      color="primary"
       startContent={
         <SearchIcon className="text-base text-default-400 pointer-events-none flex-shrink-0" />
       }
@@ -69,11 +82,11 @@ export const Navbar = () => {
   return (
     <HeroUINavbar
       maxWidth="xl"
-      position="sticky"
-      isBlurred={isScrolled}
+      isBlurred={(isHome && isScrolled) || !isHome}
       className={clsx(
         "transition-all",
-        isHome && !isScrolled ? "absolute bg-transparent" : ""
+        isHome && !isScrolled ? "absolute bg-transparent" : "",
+        isHome && isScrolled ? "fixed top-0" : ""
       )}
     >
       <NavbarContent
@@ -100,6 +113,7 @@ export const Navbar = () => {
             <NavbarItem key={item.href}>
               <NextLink
                 className={clsx(
+                  // @ts-ignore
                   linkStyles({ color: isScrolled ? "foreground" : "" }),
                   "data-[active=true]:text-primary  data-[active=true]:font-medium text-xs"
                 )}
@@ -117,47 +131,112 @@ export const Navbar = () => {
         className="hidden sm:flex basis-1/5 sm:basis-full"
         justify="end"
       >
-        <NavbarItem className="hidden lg:flex">{searchInput}</NavbarItem>
         <NavbarItem className="hidden md:flex">
-          <Button
-            isExternal
-            as={Link}
-            color={isHome && !isScrolled ? "default" : "primary"}
-            href={siteConfig.links.sponsor}
-          >
-            Login
-          </Button>
+          {!isSignedIn ? (
+            <Button
+              as={Link}
+              color={isHome && !isScrolled ? "default" : "primary"}
+              href={"/auth/login"}
+            >
+              Login
+            </Button>
+          ) : (
+            <div>
+              <Dropdown>
+                <DropdownTrigger>
+                  <CircleUserIcon
+                    className={clsx(
+                      "w-9",
+                      isHome && !isScrolled ? "text-default" : "text-primary"
+                    )}
+                  />
+                </DropdownTrigger>
+                <DropdownMenu aria-label="Action event example">
+                  <DropdownItem
+                    key="acara"
+                    onPress={() => Router.push("/tiket")}
+                  >
+                    Tiket Saya
+                  </DropdownItem>
+
+                  <DropdownItem
+                    key="logout"
+                    className="text-danger"
+                    color="danger"
+                    onPress={async () => {
+                      await signOut({ redirectUrl: "/auth/login" });
+                    }}
+                  >
+                    Logout
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
+            </div>
+          )}
         </NavbarItem>
       </NavbarContent>
 
       <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
-        <Link isExternal aria-label="Github" href={siteConfig.links.github}>
-          <GithubIcon className="text-default-500" />
-        </Link>
-        <ThemeSwitch />
-        <NavbarMenuToggle />
+        <NavbarMenuToggle
+          className={clsx(
+            isHome && !isScrolled ? "text-white" : "text-blue-700"
+          )}
+        />
       </NavbarContent>
 
       <NavbarMenu>
-        {searchInput}
-        <div className="mx-4 mt-2 flex flex-col gap-2">
-          {siteConfig.navMenuItems.map((item, index) => (
-            <NavbarMenuItem key={`${item}-${index}`}>
-              <Link
-                color={
-                  index === 2
-                    ? "primary"
-                    : index === siteConfig.navMenuItems.length - 1
-                      ? "danger"
-                      : "foreground"
-                }
-                href="#"
-                size="lg"
-              >
-                {item.label}
-              </Link>
-            </NavbarMenuItem>
-          ))}
+        <div className="mx-4 mt-2 flex flex-col ">
+          <div className="flex flex-col gap-5">
+            {siteConfig.navMenuItems.map((item, index) => (
+              <NavbarMenuItem key={`${item}-${index}`}>
+                <Link color={"foreground"} href={item.href} size="lg">
+                  {item.label}
+                </Link>
+              </NavbarMenuItem>
+            ))}
+          </div>
+          <NavbarMenuItem className="">
+            <Divider className="my-5" />
+            {!isSignedIn ? (
+              <>
+                <Button
+                  as={Link}
+                  color="primary"
+                  href={"/auth/login"}
+                  className="w-full"
+                >
+                  Login
+                </Button>
+                <Button
+                  as={Link}
+                  color="primary"
+                  href={"/auth/register"}
+                  className="w-full"
+                  variant="light"
+                >
+                  Login
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/tiket" color="primary" className="w-full">
+                  <Button color="primary" className="w-full">
+                    Tiket Saya
+                  </Button>
+                </Link>
+                <Button
+                  onPress={async () => {
+                    await signOut({ redirectUrl: "/auth/login" });
+                  }}
+                  color="danger"
+                  className="w-full"
+                  variant="light"
+                >
+                  Logout
+                </Button>
+              </>
+            )}
+          </NavbarMenuItem>
         </div>
       </NavbarMenu>
     </HeroUINavbar>

@@ -6,10 +6,11 @@ import React from "react";
 import Particles from "../Particles/Particles";
 import RotatingText from "../RotatingText/RotatingText";
 import Link from "next/link";
+import { Search } from "lucide-react";
 
 const HomepageHero = () => {
   return (
-    <section className="relative bg-gradient-to-r from-blue-500 to-blue-600 pt-20">
+    <section className="relative bg-gradient-to-r from-blue-600 to-indigo-700 pt-32 pb-10 min-h-[80vh] md:min-h-[70vh] lg:h-auto flex items-center">
       <div
         style={{
           width: "100%",
@@ -31,9 +32,9 @@ const HomepageHero = () => {
         </div>
       </div>
       <div className="layout flex gap-4">
-        <section className="w-6/12 flex flex-col gap-4 justify-center">
+        <section className="lg:w-6/12 flex flex-col gap-4 justify-center text-center lg:text-left">
           <div className="text-4xl text-white">
-            <div className="flex gap-5 items-center">
+            <div className="flex gap-5 items-center justify-center lg:justify-start">
               Cari
               <RotatingText
                 texts={[
@@ -60,20 +61,22 @@ const HomepageHero = () => {
             </h1>
           </div>
 
-          <div className="text-sm text-sky-50">
+          <div className="text-sm text-sky-50 leading-7">
             Ngobrol Pintar adalah ruang diskusi santai namun bermakna. Tempat
             para pemikir kreatif, profesional muda, dan peminat ilmu berbagi
             gagasan, pengalaman, dan inspirasi.
           </div>
 
           <div>
-            <Link href="/seminar">
-              <Button color="default">Cari Seminar</Button>
+            <Link href="/acara">
+              <Button color="default" startContent={<Search />}>
+                Cari Seminar
+              </Button>
             </Link>
           </div>
         </section>
 
-        <section className="w-6/12 flex justify-end items-center">
+        <section className="hidden w-6/12 lg:flex justify-end items-center">
           <Image
             src="/img/hero-image.png"
             alt="hero"
